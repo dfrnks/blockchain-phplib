@@ -1,0 +1,25 @@
+{
+    "name": "dfrnks/blockchain-phplib",
+    "description": "PHP BlockChain and cryptocurrency",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "dfrnks",
+            "email": "douglasfrancardoso@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Blockchain\\": "src"
+        }
+    },
+    "minimum-stability": "stable",
+    "require": {
+        "workerman/workerman": "^4.0",
+        "workerman/channel": "^1.0",
+        "ext-json": "*"
+    },
+    "require-dev": {
+    }
+}
