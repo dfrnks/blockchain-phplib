@@ -8,9 +8,13 @@ use Workerman\Worker;
 
 require_once __DIR__ . '/bootstrap.php';
 
-new HttpServer($app);
+$GLOBALS["proccess_qtd"] = 4;
 
-$ws = new WebSocket("127.0.0.1", 2346);
+new Channel\Server();
+
+new HttpServer($app, "0.0.0.0", !empty($argv[2]) ? $argv[2] : 80);
+
+$ws = new WebSocket("0.0.0.0", !empty($argv[3]) ? $argv[3] : 2346, $GLOBALS["proccess_qtd"]);
 
 $ws->onConnect(function (WebSocketConnection $connection) use ($ws) {
     echo "Foi, conectou alguem ai\n";
@@ -28,7 +32,7 @@ $ws->onMessage(function (WebSocketConnection $connection, $data) use ($ws) {
 });
 
 $ws->onStart(function () use ($ws) {
-    Channel\Client::connect('0.0.0.0', 2446);
+    Channel\Client::connect();
     
     Channel\Client::on("sendAll", function($event_data) use ($ws) {
         $ws->sendAll($event_data);

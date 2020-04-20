@@ -28,5 +28,9 @@ class HttpServer {
             
             $connection->send(new Response($status, $header, $body));
         };
+        
+        $this->worker->onWorkerStart = function () {
+            Channel::connect();
+        };
     }
 }
