@@ -17,7 +17,7 @@ $ws_nprocess = !empty($argv_ws[1]) ? $argv_ws[1] : 4;
 
 new Channel\Server();
 
-new GlobalData\Server();
+new Blockchain\Server();
 
 new HttpServer($app, "0.0.0.0", $http_port, $http_nprocess);
 

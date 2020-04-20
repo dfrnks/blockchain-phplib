@@ -2,8 +2,8 @@
 
 namespace Blockchain\Network;
 
+use Blockchain\Client as Blockchain;
 use Channel\Client as Channel;
-use GlobalData\Client;
 use Workerman\Connection\AsyncTcpConnection;
 use Workerman\Connection\ConnectionInterface;
 use Workerman\Worker;
@@ -42,7 +42,8 @@ class WebSocket {
         $this->worker->onWorkerStart = function () {
             Channel::connect();
     
-            $global = new Client('127.0.0.1:2207');
+            $global = new Blockchain('127.0.0.1:2207');
+            $global->info = "bla;bla";
     
             Channel::on("sendAll", function($event_data) {
                 var_dump($event_data);

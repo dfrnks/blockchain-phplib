@@ -2,8 +2,6 @@
 
 namespace Blockchain;
 
-use GlobalData\Client;
-
 class App {
     
     private $routes = [];

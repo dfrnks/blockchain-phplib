@@ -3,7 +3,7 @@
 namespace Blockchain\Network;
 
 use Blockchain\App;
-use GlobalData\Client;
+use Blockchain\Client;
 use Workerman\Connection\ConnectionInterface;
 use Workerman\Protocols\Http\Request;
 use Workerman\Protocols\Http\Response;
@@ -27,7 +27,7 @@ class HttpServer {
         $this->worker->onWorkerStart = function () {
             Channel::connect();
     
-            $this->global = new Client('127.0.0.1:2207');
+            $this->global = new \Blockchain\Client('127.0.0.1:2207');
         };
     
         $this->worker->onMessage = function (ConnectionInterface $connection, Request $request) use ($app) {
