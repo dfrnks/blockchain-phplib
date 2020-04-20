@@ -25,3 +25,27 @@ $app->get("/connect", function (Blockchain $global, $get) {
     
     return ["teste"];
 });
+
+$app->get("/peers", function (Blockchain $bchain, $get) {
+    return [
+        "peers" => $bchain->getPeers()
+    ];
+});
+
+$app->get("/block", function (Blockchain $bchain, $get) {
+    $bchain->addBlock([
+        "timestamp" => time(),
+        "date" => date("c"),
+        "data" => [
+            "data"
+        ]
+    ]);
+    
+    return [
+        "chain" => $bchain->getChain()
+    ];
+});
+
+$app->get("/lastblock", function (Blockchain $bchain, $get) {
+    return $bchain->getLastBlock();
+});
