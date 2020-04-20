@@ -13,10 +13,19 @@ class WebSocket {
      */
     private $connections = [];
     
+    /**
+     * @var Worker
+     */
     private $worker;
     
+    /**
+     * @var \Closure
+     */
     private $onConnect;
     
+    /**
+     * @var \Closure
+     */
     private $onMessage;
     
     public function __construct($ip = "127.0.0.1", $port = 2346, $proccess = 4) {
@@ -24,21 +33,30 @@ class WebSocket {
         
         $this->worker = new Worker("websocket://{$ip}:{$port}");
         $this->worker->count = $proccess;
+        $this->worker->name = "WS Server";
+        $this->worker->onConnect = function (ConnectionInterface $connection) {
+            $wsconnection = new WebSocketConnection($connection);
+            $wsconnection->onMessage($this->onMessage);
+        
+            call_user_func($this->onConnect, $wsconnection);
+        
+            $this->connections[] = $wsconnection;
+        };
     }
     
-    public function onStart($function) {
+    public function onStart(\Closure $function) : void {
         $this->worker->onWorkerStart = $function;
     }
     
-    public function onConnect($function) {
+    public function onConnect(\Closure $function) : void {
         $this->onConnect = $function;
     }
     
-    public function onMessage($function) {
+    public function onMessage(\Closure $function) : void {
         $this->onMessage = $function;
     }
     
-    public function connect($ip, $port) {
+    public function connect($ip, $port) : void {
         $ws_connection = new AsyncTcpConnection("ws://{$ip}:{$port}");
         $ws_connection->onConnect = function (ConnectionInterface $connection) {
             $wsconnection = new WebSocketConnection($connection);
@@ -56,22 +74,9 @@ class WebSocket {
         $ws_connection->connect();
     }
     
-    public function sendAll($data) {
+    public function sendAll($data) : void {
         foreach ($this->connections as $connection) {
             $connection->send($data);
         }
-    }
-    
-    public function run() {
-        $this->worker->onConnect = function (ConnectionInterface $connection) {
-            $wsconnection = new WebSocketConnection($connection);
-            $wsconnection->onMessage($this->onMessage);
-    
-            call_user_func($this->onConnect, $wsconnection);
-            
-            $this->connections[] = $wsconnection;
-        };
-        
-        \Workerman\Worker::runAll();
     }
 }

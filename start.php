@@ -1,9 +1,13 @@
 <?php
 
+use Blockchain\Network\HttpServer;
 use Blockchain\Network\WebSocket;
 use Blockchain\Network\WebSocketConnection;
+use Workerman\Worker;
 
 require_once __DIR__ . '/bootstrap.php';
+
+new HttpServer($app);
 
 $ws = new WebSocket("127.0.0.1", 2346);
 
@@ -34,4 +38,4 @@ $ws->onStart(function () use ($ws) {
     });
 });
 
-$ws->run();
+Worker::runAll();
