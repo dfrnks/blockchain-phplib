@@ -5,7 +5,7 @@ COPY . /srv/app
 RUN docker-php-ext-install pcntl
 
 WORKDIR /srv/app
-CMD [ "php", "service", "start"]
+CMD [ "php", "service", "start", "80", "2200"]
 
 #sudo docker build --file Dockerfile -t mam-docker .
 
