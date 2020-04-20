@@ -29,9 +29,11 @@ class WebSocket {
      */
     private $onMessage;
     
-    public function __construct($ip = "127.0.0.1", $port = 2346, $proccess = 4) {
+    public function __construct($ip = "127.0.0.1", $port = 2346, $process = 4) {
+        $GLOBALS["proccess_qtd"] = $process;
+    
         $this->worker = new Worker("websocket://{$ip}:{$port}");
-        $this->worker->count = $proccess;
+        $this->worker->count = $process;
         $this->worker->name = "WS Server";
         $this->worker->onConnect = function (ConnectionInterface $connection) {
             $this->connections[] = $connection;

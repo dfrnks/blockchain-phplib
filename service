@@ -7,14 +7,20 @@ use Workerman\Worker;
 
 require_once __DIR__ . '/bootstrap.php';
 
-$GLOBALS["proccess_qtd"] = 4;
+$argv_http     = explode(":", isset($argv[2]) ? $argv[2] : "");
+$http_port     = !empty($argv_http[0]) ? $argv_http[0] : 8000;
+$http_nprocess = !empty($argv_http[1]) ? $argv_http[1] : 4;
+
+$argv_ws     = explode(":", isset($argv[3]) ? $argv[3] : "");
+$ws_port     = !empty($argv_ws[0]) ? $argv_ws[0] : 2210;
+$ws_nprocess = !empty($argv_ws[1]) ? $argv_ws[1] : 4;
 
 new Channel\Server();
 
 new GlobalData\Server();
 
-new HttpServer($app, "0.0.0.0", !empty($argv[2]) ? $argv[2] : 80);
+new HttpServer($app, "0.0.0.0", $http_port, $http_nprocess);
 
-new WebSocket("0.0.0.0", !empty($argv[3]) ? $argv[3] : 2346, $GLOBALS["proccess_qtd"]);
+new WebSocket("0.0.0.0", $ws_port, $ws_nprocess);
 
 Worker::runAll();
