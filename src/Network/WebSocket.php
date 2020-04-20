@@ -30,7 +30,7 @@ class WebSocket {
     private $onMessage;
     
     public function __construct($ip = "127.0.0.1", $port = 2346, $process = 4) {
-        $GLOBALS["proccess_qtd"] = $process;
+        $GLOBALS["process_qtd"] = $process;
     
         $this->worker = new Worker("websocket://{$ip}:{$port}");
         $this->worker->count = $process;

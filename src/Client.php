@@ -2,6 +2,8 @@
 
 namespace Blockchain;
 
+use Workerman\Lib\Timer;
+
 class Client {
     /**
      * Timeout.
@@ -66,12 +68,12 @@ class Client {
             
             stream_set_timeout($connection, $this->timeout);
             if(class_exists('\Workerman\Lib\Timer') && php_sapi_name() === 'cli') {
-                $timer_id = \Workerman\Lib\Timer::add($this->pingInterval, function($connection)use(&$timer_id) {
+                $timer_id = Timer::add($this->pingInterval, function($connection)use(&$timer_id) {
                     $buffer = pack('N', 8)."ping";
                     
                     if(strlen($buffer) !== @fwrite($connection, $buffer)) {
                         @fclose($connection);
-                        \Workerman\Lib\Timer::del($timer_id);
+                        Timer::del($timer_id);
                     }
                     
                 }, array($connection));
