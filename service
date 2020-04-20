@@ -1,3 +1,4 @@
+#!/usr/bin/php
 <?php
 
 use Blockchain\Network\HttpServer;
@@ -18,12 +19,12 @@ $ws->onConnect(function (WebSocketConnection $connection) use ($ws) {
 });
 
 $ws->onMessage(function (WebSocketConnection $connection, $data) use ($ws) {
-//    if (is_object($data) && $data->type == "connectaai") {
-//        $ws->connect("127.0.0.1", "2348");
-//    }
+    //    if (is_object($data) && $data->type == "connectaai") {
+    //        $ws->connect("127.0.0.1", "2348");
+    //    }
     var_dump($data);
     
-//    $connection->send(["message" => "ok"]);
+    //    $connection->send(["message" => "ok"]);
 });
 
 $ws->onStart(function () use ($ws) {
