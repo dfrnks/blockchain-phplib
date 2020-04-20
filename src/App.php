@@ -2,6 +2,8 @@
 
 namespace Blockchain;
 
+use GlobalData\Client;
+
 class App {
     
     private $routes = [];
@@ -30,7 +32,7 @@ class App {
         return  $this;
     }
     
-    public function exec($method, $uri, $querystring, $body) : array {
+    public function exec($method, $uri, $querystring, $body, Client $global) : array {
         if (!key_exists($method, $this->routes) || !key_exists($uri, $this->routes[$method])) {
             return [
                 404,
@@ -44,7 +46,7 @@ class App {
         $rota = $this->routes[$method][$uri];
         
         try {
-            $data = $rota($querystring, $body);
+            $data = $rota($global, $querystring, $body);
         } catch (\Exception $exception) {
             return [
                 500,
@@ -66,19 +68,5 @@ class App {
         }
     
         return [ 200, [], $data ];
-    }
-    
-    public function run() {
-        $data = json_decode(file_get_contents("php://input"), true) ? : $_POST;
-        
-        [$status, $header, $body] = $this->exec($_SERVER["REQUEST_METHOD"], $_SERVER["REQUEST_URI"], $_GET, $data);
-        
-        http_response_code($status);
-        
-        foreach ($header as $key => $item) {
-            header("{$key}: {$item}");
-        }
-        
-        echo $body;
     }
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "170d2140bfaa8b3bc0cea63ba1bf1f53",
+    "content-hash": "6c6e901517d180343e2e20ddde88a389",
     "packages": [
         {
             "name": "workerman/channel",
@@ -35,6 +35,36 @@
             ],
             "homepage": "http://www.workerman.net",
             "time": "2018-07-02T02:42:37+00:00"
+        },
+        {
+            "name": "workerman/globaldata",
+            "version": "v1.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/walkor/GlobalData.git",
+                "reference": "baf3b7af338f329e88136ebe92266dfe40dd00a7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/walkor/GlobalData/zipball/baf3b7af338f329e88136ebe92266dfe40dd00a7",
+                "reference": "baf3b7af338f329e88136ebe92266dfe40dd00a7",
+                "shasum": ""
+            },
+            "require": {
+                "workerman/workerman": ">=3.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "GlobalData\\": "./src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "homepage": "http://www.workerman.net",
+            "time": "2018-08-16T03:59:34+00:00"
         },
         {
             "name": "workerman/workerman",
@@ -89,6 +119,8 @@
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
+    "platform": {
+        "ext-json": "*"
+    },
     "platform-dev": []
 }

@@ -16,9 +16,10 @@
     },
     "minimum-stability": "stable",
     "require": {
+        "ext-json": "*",
         "workerman/workerman": "^4.0",
         "workerman/channel": "^1.0",
-        "ext-json": "*"
+        "workerman/globaldata": "^1.0"
     },
     "require-dev": {
     }

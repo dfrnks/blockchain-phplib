@@ -3,13 +3,14 @@
 namespace Blockchain\Network;
 
 use Channel\Client as Channel;
+use GlobalData\Client;
 use Workerman\Connection\AsyncTcpConnection;
 use Workerman\Connection\ConnectionInterface;
 use Workerman\Worker;
 
 class WebSocket {
     /**
-     * @var WebSocketConnection[]
+     * @var ConnectionInterface[]
      */
     private $connections = [];
     
@@ -33,16 +34,13 @@ class WebSocket {
         $this->worker->count = $proccess;
         $this->worker->name = "WS Server";
         $this->worker->onConnect = function (ConnectionInterface $connection) {
-            $wsconnection = new WebSocketConnection($connection);
-            $wsconnection->onMessage($this->onMessage);
-        
-            call_user_func($this->onConnect, $wsconnection);
-        
-            $this->connections[] = $wsconnection;
+            $this->connections[] = $connection;
         };
         
         $this->worker->onWorkerStart = function () {
             Channel::connect();
+    
+            $global = new Client('127.0.0.1:2207');
     
             Channel::on("sendAll", function($event_data) {
                 var_dump($event_data);
@@ -60,41 +58,36 @@ class WebSocket {
                 }
             });
         };
+        
+        $this->worker->onMessage = function (ConnectionInterface $connection, $data) {
+            $this->onMessage($connection, $data);
+        };
     }
     
-    public function onStart(\Closure $function) : void {
-//        $this->worker->onWorkerStart = $function;
-    }
-    
-    public function onConnect(\Closure $function) : void {
-        $this->onConnect = $function;
-    }
-    
-    public function onMessage(\Closure $function) : void {
-        $this->onMessage = $function;
+    public function onMessage(ConnectionInterface $connection, $data) : void {
+        var_dump($data);
     }
     
     public function connect($ip, $port) : void {
-        $ws_connection = new AsyncTcpConnection("ws://{$ip}:{$port}");
-        $ws_connection->onConnect = function (ConnectionInterface $connection) {
-            $wsconnection = new WebSocketConnection($connection);
-            $wsconnection->onConnect($this->onConnect);
-            $wsconnection->onMessage($this->onMessage);
+        $connection = new AsyncTcpConnection("ws://{$ip}:{$port}");
     
-            $this->connections[] = $wsconnection;
-        };
-    
-        $ws_connection->onClose = function (ConnectionInterface $connection) use ($ws_connection){
+        $connection->onClose = function () use ($connection){
             echo "Connection closed\n";
-            $ws_connection->reconnect(5);
+            $connection->reconnect(5);
         };
-        
-        $ws_connection->connect();
+    
+        $connection->onMessage = function (ConnectionInterface $connection, $data) {
+            $this->onMessage($connection, $data);
+        };
+    
+        $connection->connect();
+    
+        $this->connections[] = $connection;
     }
     
     public function sendAll($data) : void {
         foreach ($this->connections as $connection) {
-            $connection->send($data);
+            $connection->send(json_encode($data));
         }
     }
 }
