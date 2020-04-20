@@ -20,7 +20,7 @@ class HttpServer {
      */
     private $global;
     
-    public function __construct(App $app, $ip = "127.0.0.1", $port = 8000, $proccess = 1) {
+    public function __construct(App $app, $ip = "127.0.0.1", $port = 8000, $proccess = 4) {
         $this->worker = new Worker("http://{$ip}:{$port}");
         $this->worker->count = $proccess;
         $this->worker->name = "HTTP Server";
