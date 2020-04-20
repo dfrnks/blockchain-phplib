@@ -9,6 +9,7 @@ use Workerman\Connection\ConnectionInterface;
 use Workerman\Worker;
 
 class WebSocket {
+    
     /**
      * @var ConnectionInterface[]
      */
