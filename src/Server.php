@@ -40,6 +40,14 @@ class Server {
             if (file_exists("chain.bk")) {
                 $this->chain = unserialize(file_get_contents("chain.bk"));
             }
+    
+            if (empty($this->chain)) {
+                $genesis = new Block(["info" => "No princípio criou Deus o céu e a terra. Gênesis 1:1"]);
+                $genesis->setTimestamp('1587150686.2415');
+                $genesis->mineBlock();
+                
+                $this->addBlock($genesis);
+            }
         };
         
         $worker->onWorkerStop = function () {
@@ -166,10 +174,10 @@ class Server {
     
         switch($cmd) {
             case "get":
-                return $connection->send(serialize($this->peers));
+                return $connection->send(serialize(array_values($this->peers)));
                 break;
             case "add":
-                $this->peers[] = $data["peer"];
+                $this->peers[$data["peer"]] = $data["peer"];
                 return $connection->send("b:1;");
                 break;
         }
@@ -201,30 +209,32 @@ class Server {
                 return $connection->send(serialize(end($this->chain)));
                 break;
             case "add":
-                /**
-                 * @var Block $block
-                 */
-                $block = $data["block"];
-                
-                if (!$block->isValid()) {
-                    $connection->send("b:0;");
-                } else {
-                    /**
-                     * @var Block $lastBlock
-                     */
-                    $lastBlock = end($this->chain);
-                    
-                    if (empty($lastBlock) || $block->getLastHash() == $lastBlock->getHash()) {
-                        $this->chain[] = $data["block"];
-                        
-                        $connection->send("b:1;");
-                    } else {
-                        $connection->send("b:0;");
-                    }
-                }
+                $this->addBlock($data["block"]);
+    
+                return $connection->send(serialize($this->chain));
                 
                 break;
         }
+    }
+    
+    /**
+     * @param Block $block
+     * @return bool
+     */
+    protected function addBlock(Block $block) : bool {
+        if (!$block->isValid()) {
+            return false;
+        } else {
+            $lastBlock = end($this->chain);
+        
+            if (empty($lastBlock) || $block->getLastHash() == $lastBlock->getHash()) {
+                $this->chain[] = $block;
+    
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     protected function replaceChain($chain) {
@@ -244,7 +254,7 @@ class Server {
      * @return bool
      */
     protected function isValidChain($chain) {
-        if (!empty($this->chain) && $chain[0] !== $this->chain[0]) {
+        if (!empty($this->chain) && serialize($chain[0]) !== serialize($this->chain[0])) {
             return false;
         }
         

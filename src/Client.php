@@ -221,29 +221,6 @@ class Client {
             "cmd"  => "getLast",
         ]);
         
-        $block = $this->readFromRemote();
-        
-        if ($block instanceof Block) {
-            return $block;
-        }
-    
-        $genesis = new Block(["info" => "No princípio criou Deus o céu e a terra. Gênesis 1:1"]);
-        $genesis->setTimestamp('1587150686.2415');
-        $genesis->mineBlock();
-    
-        $this->writeToRemote([
-            "type" => "chain",
-            "cmd"  => "add",
-            "block" => $genesis
-        ]);
-    
-        $this->readFromRemote();
-    
-        $this->writeToRemote([
-            "type" => "chain",
-            "cmd"  => "getLast",
-        ]);
-        
         return $this->readFromRemote();
     }
     

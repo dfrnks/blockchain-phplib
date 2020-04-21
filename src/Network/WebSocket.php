@@ -3,7 +3,6 @@
 namespace Blockchain\Network;
 
 use Blockchain\Client as Blockchain;
-use Channel\Client as Channel;
 use Workerman\Connection\AsyncTcpConnection;
 use Workerman\Connection\ConnectionInterface;
 use Workerman\Worker;
@@ -29,6 +28,8 @@ class WebSocket {
     
     private $peers = [];
     
+    private $chain = [];
+    
     public function __construct($ip = "127.0.0.1", $port = 2346, $process = 4) {
         $GLOBALS["process_qtd"] = $process;
     
@@ -40,10 +41,10 @@ class WebSocket {
             
             Channel::connect();
     
-            foreach ($this->peers as $peer) {
-                $peer = explode(":", $peer);
-                
-                Channel::sendOneRandon("connect", $peer);
+            if ($this->worker->id == 0) {
+                foreach ($this->peers as $peer) {
+                    $this->connect($peer);
+                }
             }
             
             Channel::on("sendAll", function($event_data) {
@@ -52,7 +53,7 @@ class WebSocket {
     
             Channel::on("connect", function($event_data) {
                 if ($this->worker->id === $event_data["id"]) {
-                    $this->connect($event_data["data"][0], $event_data["data"][1]);
+                    $this->connect($event_data["data"]);
                 }
             });
     
@@ -60,10 +61,11 @@ class WebSocket {
                 if ($this->worker->id === $event_data["id"]) {
                     $this->log("Novo bloco para adicionar");
                     
-                    $this->bchain->addBlock($event_data["data"]);
+                    $chain = $this->bchain->addBlock($event_data["data"]);
+    
+                    $this->syncChain($chain);
                     
-                    // Manda todo mundo sincronizar
-                    Channel::publish("syncChain", []);
+                    Channel::publish("syncChain", $chain);
                 }
             });
     
@@ -76,6 +78,8 @@ class WebSocket {
             $this->log("Novo peer connected");
             
             $this->connections[] = $connection;
+    
+            $this->syncChain();
         };
         
         $this->worker->onMessage = function (ConnectionInterface $connection, $data) {
@@ -123,6 +127,24 @@ class WebSocket {
             return;
         }
     
+        if (isset($data["peers"])) {
+            $mypeers = $this->bchain->getPeers();
+            
+            foreach ($data["peers"] as $key => $peer) {
+                foreach ($mypeers as $mypeer) {
+                    if ($peer == $mypeer) {
+                        unset($data["peers"][$key]);
+                    }
+                }
+            }
+    
+            foreach ($data["peers"] as $key => $peer) {
+                Channel::sendOneRandon("connect", $peer);
+            }
+            
+            return;
+        }
+    
     
         var_dump($data);
     }
@@ -132,8 +154,8 @@ class WebSocket {
      * @param $port
      * @throws \Exception
      */
-    public function connect($ip, $port) : void {
-        $connection = new AsyncTcpConnection("ws://{$ip}:{$port}");
+    public function connect($address) : void {
+        $connection = new AsyncTcpConnection("ws://{$address}");
     
         $connection->onClose = function () use ($connection){
             $this->log("Connection closed " .  $connection->getRemoteAddress());
@@ -147,6 +169,8 @@ class WebSocket {
     
         $connection->onConnect = function (ConnectionInterface $connection) {
             $connection->send(serialize(["myaddress" => $this->address]));
+            $connection->send(serialize(["newchain" => $this->bchain->getChain()]));
+            $connection->send(serialize(["peers" => $this->bchain->getPeers()]));
         };
     
         $connection->connect();
@@ -162,11 +186,23 @@ class WebSocket {
         }
     }
     
-    public function syncChain() : void {
+    public function syncChain(array $chain = []) : void {
+        if (!$this->connections) {
+            return;
+        }
+        
+        $chain = $chain ? : $this->bchain->getChain();
+    
+        if (count($this->chain) >= count($chain)) {
+            return;
+        }
+        
+        $this->chain = $chain;
+        
         $this->log("Sincronizando chain");
         
         foreach ($this->connections as $connection) {
-            $connection->send(serialize(["newChain" => $this->bchain->getChain()]));
+            $connection->send(serialize(["newchain" => $chain]));
         }
     }
     
