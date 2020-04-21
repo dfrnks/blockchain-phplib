@@ -185,22 +185,34 @@ class Client {
     }
     
     /**
-     * @param array $block
+     * @param array $data
      * @return mixed
      * @throws \Exception
      */
-    public function addBlock(array $block) {
+    public function addBlock(array $data) {
+        $block = new Block($data);
+        
+        $lastBlock = $this->getLastBlock();
+        
+        $block->mineBlock($lastBlock);
+
         $this->writeToRemote([
             "type" => "chain",
             "cmd"  => "add",
             "block" => $block
         ]);
     
-        return $this->readFromRemote();
+        $success = $this->readFromRemote();
+        
+        if ($success) {
+            return $success;
+        }
+        
+        return $this->addBlock($data);
     }
     
     /**
-     * @return mixed
+     * @return Block|mixed
      * @throws \Exception
      */
     public function getLastBlock() {
@@ -208,7 +220,30 @@ class Client {
             "type" => "chain",
             "cmd"  => "getLast",
         ]);
+        
+        $block = $this->readFromRemote();
+        
+        if ($block instanceof Block) {
+            return $block;
+        }
     
+        $genesis = new Block(["info" => "No princípio criou Deus o céu e a terra. Gênesis 1:1"]);
+        $genesis->setTimestamp('1587150686.2415');
+        $genesis->mineBlock();
+    
+        $this->writeToRemote([
+            "type" => "chain",
+            "cmd"  => "add",
+            "block" => $genesis
+        ]);
+    
+        $this->readFromRemote();
+    
+        $this->writeToRemote([
+            "type" => "chain",
+            "cmd"  => "getLast",
+        ]);
+        
         return $this->readFromRemote();
     }
     
@@ -220,6 +255,21 @@ class Client {
         $this->writeToRemote([
             "type" => "chain",
             "cmd"  => "get",
+        ]);
+    
+        return $this->readFromRemote();
+    }
+    
+    /**
+     * @param $chain
+     * @return mixed
+     * @throws \Exception
+     */
+    public function setChain(array $chain) {
+        $this->writeToRemote([
+            "type"  => "chain",
+            "cmd"   => "set",
+            "chain" => $chain
         ]);
     
         return $this->readFromRemote();

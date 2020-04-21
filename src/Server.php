@@ -20,7 +20,7 @@ class Server {
     protected $dataArray = [];
     
     /**
-     * @var array 
+     * @var Block[]
      */
     protected $chain = [];
     
@@ -35,6 +35,16 @@ class Server {
         $worker->name = "Block chain";
         $worker->onMessage = array($this, "onMessage");
         $worker->reloadable = false;
+        
+        $worker->onWorkerStart = function () {
+            if (file_exists("chain.bk")) {
+                $this->chain = unserialize(file_get_contents("chain.bk"));
+            }
+        };
+        
+        $worker->onWorkerStop = function () {
+            file_put_contents("chain.bk", serialize($this->chain));
+        };
         
         $this->worker = $worker;
     }
@@ -182,13 +192,83 @@ class Server {
             case "get":
                 return $connection->send(serialize($this->chain));
                 break;
+            case "set":
+                $this->replaceChain($data["chain"]);
+                
+                return $connection->send(serialize($this->chain));
+                break;
             case "getLast":
                 return $connection->send(serialize(end($this->chain)));
                 break;
             case "add":
-                $this->chain[] = $data["block"]; // Na verdade não, tem que fazer a mineração
-                $connection->send("b:1;");
+                /**
+                 * @var Block $block
+                 */
+                $block = $data["block"];
+                
+                if (!$block->isValid()) {
+                    $connection->send("b:0;");
+                } else {
+                    /**
+                     * @var Block $lastBlock
+                     */
+                    $lastBlock = end($this->chain);
+                    
+                    if (empty($lastBlock) || $block->getLastHash() == $lastBlock->getHash()) {
+                        $this->chain[] = $data["block"];
+                        
+                        $connection->send("b:1;");
+                    } else {
+                        $connection->send("b:0;");
+                    }
+                }
+                
                 break;
         }
+    }
+    
+    protected function replaceChain($chain) {
+        if (count($this->chain) > count($chain)) {
+            return false;
+        } elseif (!$this->isValidChain($chain)) {
+            return false;
+        }
+        
+        $this->chain = $chain;
+        
+        return true;
+    }
+    
+    /**
+     * @param Block[] $chain
+     * @return bool
+     */
+    protected function isValidChain($chain) {
+        if (!empty($this->chain) && $chain[0] !== $this->chain[0]) {
+            return false;
+        }
+        
+        foreach ($chain as $key => $block) {
+            if ($key > 0) {
+                $lastBlock = $chain[$key - 1];
+                $lastHash = $lastBlock->getHash();
+            } else {
+                $lastHash = "--";
+            }
+            
+            if ($block->getLastHash() != $lastHash) {
+                return false;
+            }
+            
+            if (!$block->isValid()) {
+                return false;
+            }
+            
+            if ($block->hash() !== $block->getHash()) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 }

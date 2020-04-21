@@ -7,42 +7,41 @@ use Blockchain\Network\Channel;
 require_once __DIR__ . '/vendor/autoload.php';
 
 $app = new App();
-$app->get("/", function (Blockchain $global, $get) {
+
+$app->get("/chain", function (Blockchain $bchain, $get) {
+    $blocks = [];
     
-    var_dump($global->info);
+    foreach ($bchain->getChain() as $block) {
+        /**
+         * @var \Blockchain\Block $block
+         */
+        $blocks[] = $block->getBlock();
+    }
     
-    return ["teste"];
+    return $blocks;
 });
 
-$app->get("/teste", function (Blockchain $global, $get) {
+$app->get("/teste", function (Blockchain $bchain, $get) {
     Channel::sendAll("sendAll", ["message" => $get["message"] ?:"foda-se, funcionou!"]);
     
     return ["teste"];
 });
 
-$app->get("/connect", function (Blockchain $global, $get) {
+$app->get("/connect", function (Blockchain $bchain, $get) {
     Channel::sendOneRandon("connect", ["127.0.0.1", "2346"]);
     
     return ["teste"];
 });
 
 $app->get("/peers", function (Blockchain $bchain, $get) {
-    return [
-        "peers" => $bchain->getPeers()
-    ];
+    return $bchain->getPeers();
 });
 
-$app->get("/block", function (Blockchain $bchain, $get) {
-    $bchain->addBlock([
-        "timestamp" => time(),
-        "date" => date("c"),
-        "data" => [
-            "data"
-        ]
-    ]);
+$app->put("/block", function (Blockchain $bchain, $get, $post) {
+    Channel::sendOneRandon("addBlock", $post);
     
     return [
-        "chain" => $bchain->getChain()
+        "success" => true
     ];
 });
 

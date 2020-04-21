@@ -27,34 +27,54 @@ class WebSocket {
     
     private $address;
     
+    private $peers = [];
+    
     public function __construct($ip = "127.0.0.1", $port = 2346, $process = 4) {
-        $this->address = "{$ip}:{$port}";
-        
         $GLOBALS["process_qtd"] = $process;
     
-        $this->worker = new Worker("websocket://{$this->address}");
+        $this->worker = new Worker("websocket://{$ip}:{$port}");
         $this->worker->count = $process;
         $this->worker->name = "WS Server";
         $this->worker->onWorkerStart = function () {
+            $this->bchain = new Blockchain('127.0.0.1:2207');
+            
             Channel::connect();
     
-            $this->bchain = new Blockchain('127.0.0.1:2207');
-            $this->bchain->info = "bla;bla";
-    
+            foreach ($this->peers as $peer) {
+                $peer = explode(":", $peer);
+                
+                Channel::sendOneRandon("connect", $peer);
+            }
+            
             Channel::on("sendAll", function($event_data) {
-                if ($event_data["id"] === -1 || $this->worker->id === $event_data["id"]) {
-                    $this->sendAll($event_data["data"]);
-                }
+                $this->sendAll($event_data["data"]);
             });
     
             Channel::on("connect", function($event_data) {
-                if ($event_data["id"] === -1 || $this->worker->id === $event_data["id"]) {
+                if ($this->worker->id === $event_data["id"]) {
                     $this->connect($event_data["data"][0], $event_data["data"][1]);
                 }
+            });
+    
+            Channel::on("addBlock", function($event_data) {
+                if ($this->worker->id === $event_data["id"]) {
+                    $this->log("Novo bloco para adicionar");
+                    
+                    $this->bchain->addBlock($event_data["data"]);
+                    
+                    // Manda todo mundo sincronizar
+                    Channel::publish("syncChain", []);
+                }
+            });
+    
+            Channel::on("syncChain", function($event_data) {
+                $this->syncChain();
             });
         };
     
         $this->worker->onConnect = function (ConnectionInterface $connection) {
+            $this->log("Novo peer connected");
+            
             $this->connections[] = $connection;
         };
         
@@ -64,18 +84,46 @@ class WebSocket {
     }
     
     /**
+     * @param $address
+     * @return WebSocket
+     */
+    public function setAddress($address): WebSocket {
+        $this->address = $address;
+        
+        return $this;
+    }
+    
+    /**
+     * @param $peer
+     * @return WebSocket
+     */
+    public function setPeerConnect($peer): WebSocket {
+        $this->peers[] = $peer;
+
+        return $this;
+    }
+    
+    /**
      * @param ConnectionInterface $connection
      * @param $buffer
      * @throws \Exception
      */
     public function onMessage(ConnectionInterface $connection, $buffer) : void {
-        $data = unserialize($buffer);
+        $this->log($buffer);
+        
+        $data = @unserialize($buffer);
         
         if (isset($data["myaddress"])) {
             $this->bchain->addPeer($data["myaddress"]);
             return;
         }
-        
+    
+        if (isset($data["newchain"])) {
+            $this->bchain->setChain($data["newchain"]);
+            return;
+        }
+    
+    
         var_dump($data);
     }
     
@@ -88,7 +136,8 @@ class WebSocket {
         $connection = new AsyncTcpConnection("ws://{$ip}:{$port}");
     
         $connection->onClose = function () use ($connection){
-            echo "Connection closed\n";
+            $this->log("Connection closed " .  $connection->getRemoteAddress());
+            
             $connection->reconnect(5);
         };
     
@@ -111,5 +160,23 @@ class WebSocket {
         foreach ($this->connections as $connection) {
             $connection->send(json_encode($data));
         }
+    }
+    
+    public function syncChain() : void {
+        $this->log("Sincronizando chain");
+        
+        foreach ($this->connections as $connection) {
+            $connection->send(serialize(["newChain" => $this->bchain->getChain()]));
+        }
+    }
+    
+    public function log($msg) {
+        if (is_array($msg)) {
+            $msg = json_encode($msg);
+        }
+        
+        $date = date("c");
+        
+        Worker::log("id[{$this->worker->id}] [{$date}] {$msg}");
     }
 }
