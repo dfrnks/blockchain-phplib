@@ -21,18 +21,6 @@ $app->get("/chain", function (Blockchain $bchain, $get) {
     return $blocks;
 });
 
-$app->get("/teste", function (Blockchain $bchain, $get) {
-    Channel::sendAll("sendAll", ["message" => $get["message"] ?:"foda-se, funcionou!"]);
-    
-    return ["teste"];
-});
-
-$app->get("/connect", function (Blockchain $bchain, $get) {
-    Channel::sendOneRandon("connect", ["127.0.0.1", "2346"]);
-    
-    return ["teste"];
-});
-
 $app->get("/peers", function (Blockchain $bchain, $get) {
     return $bchain->getPeers();
 });
